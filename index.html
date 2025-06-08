@@ -577,7 +577,7 @@
                 case 'examine_fireplace':
                     if (gameState.selectedItem=='futonbo') {
                         updateMessage('なんと灰の中からクマの妖精があらわれた！');
-                        IMAGES.rooms.living = 'images/living3.jpg';
+                        IMAGES.rooms.living = 'images/living2.jpg';
                         gameState.flags.foundBear = true;
   
                         rooms.living.clickableAreas.push({
@@ -723,7 +723,7 @@
                 
                     if (gameState.selectedItem=='book' && gameState.currentChannel==2) {
                         updateMessage('妖精は喜んでいる！');
-                        IMAGES.rooms.living = 'images/living4.jpg';
+                        IMAGES.rooms.living = 'images/living3.jpg';
                         gameState.flags.happyBear = true;
                         removeItem('book');
                         changeRoom(gameState.currentRoom);
