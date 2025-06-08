@@ -1052,7 +1052,11 @@
 
         function saveGame() {
             localStorage.setItem('escapeGameState', JSON.stringify(gameState));
+            const oldMsg = document.getElementById('messageArea').innerHTML;
             updateMessage('セーブしました！');
+            setTimeout(() => {
+                updateMessage(oldMsg);
+            }, 1500);
         }
 
         function loadGame() {
