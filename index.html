@@ -486,6 +486,7 @@
                 ]
             }
         };
+        const initialLivingAreas = JSON.parse(JSON.stringify(rooms.living.clickableAreas));
 
         // ゲーム初期化
         function initGame() {
@@ -941,6 +942,7 @@
         // ゲームリスタート
         function restartGame() {
             IMAGES.rooms.living = 'images/living.jpg';
+            rooms.living.clickableAreas = JSON.parse(JSON.stringify(initialLivingAreas));
             gameState = {
                 currentRoom: 'genkan',
                 currentChannel: 1,
