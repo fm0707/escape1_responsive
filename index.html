@@ -508,6 +508,17 @@
             updateMessage(`${room.name}に入りました。${room.description}`);
         }
 
+        // 背景画像を差し替え
+        function changeRoomImage(roomId) {
+            gameState.currentRoom = roomId;
+            const room = rooms[roomId];
+            
+            // 背景画像を設定（画像がない場合はプレースホルダー）
+            const roomView = document.getElementById('roomView');
+            roomView.style.backgroundImage = `url(${IMAGES.rooms[roomId]})`;
+            generateClickableAreas(room);
+        }
+
         // クリック可能エリアを生成
         // 
         function generateClickableAreas(room) {
@@ -585,7 +596,7 @@
                             action: 'talkto_bear',
                             description: 'クマと話す'
                         });
-                        changeRoom(gameState.currentRoom);
+                        changeRoomImage(gameState.currentRoom);
                     } else if(gameState.flags.foundBear){
                         updateMessage('囲炉裏に灰がたまっている');
                     } else {
@@ -726,7 +737,7 @@
                         IMAGES.rooms.living = 'images/living3.jpg';
                         gameState.flags.happyBear = true;
                         removeItem('book');
-                        changeRoom(gameState.currentRoom);
+                        changeRoomImage(gameState.currentRoom);
                         
                     } 
                     break;
