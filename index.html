@@ -240,8 +240,48 @@
 
         .notice {
             text-overflow: clip;
-
         }
+
+        .save-area {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin: 18px 0 4px 0;
+            width: 40%;
+        }
+
+        @media (max-width: 600px) {
+            .save-area {
+                width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                margin-top: 8px;
+                gap: 16px;
+            }
+        }
+
+        .save-area .nav-btn {
+            min-width: 80px;
+            padding: 10px 18px;
+            font-size: 15px;
+            background: linear-gradient(135deg, #d4af37 85%, #b8941f 100%);
+            border-radius: 8px;
+            border: none;
+            color: #1a0f08;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.1);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .save-area .nav-btn:hover {
+            background: linear-gradient(135deg, #b8941f 70%, #d4af37 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 0 12px #d4af3740;
+        }
+
     </style>
 </head>
 <body>
@@ -256,7 +296,7 @@
         <div class="ui-panel">
             <div class="info-panel">
                 <div class="message-area" id="messageArea">
-                    古い日本家屋に入りました。この家には代々受け継がれてきた貴重な家宝が隠されているという...
+                   気付けばあなたは、古い日本家屋の中に閉じ込められていた。<br>この屋敷に眠る家宝とともに、無事に脱出できるだろうか…？
                 </div>
                 <div class="navigation">
                     <button class="nav-btn" onclick="changeRoom('genkan')">玄関</button>
@@ -275,7 +315,10 @@
             <button id="bgm-toggle" onclick="toggleBGM()" style="position:absolute;top:20px;right:20px;z-index:1000;">
             🔊 BGM
             </button> 
-            
+            <div class="save-area">
+                <button class="nav-btn" onclick="saveGame()">セーブ</button>
+                <button class="nav-btn" onclick="loadGame()">ロード</button>
+            </div>
         </div>
         <div class="notice">当サイトはOtoLogicの素材を使用しています</div>
     </div>
@@ -491,7 +534,7 @@
         // ゲーム初期化
         function initGame() {
             changeRoom('genkan');
-            updateMessage('古い日本家屋に足を踏み入れました。この家のどこかに家宝が隠されているはずです...');
+            updateMessage('気付けばあなたは、古い日本家屋の中に閉じ込められていた。この屋敷に眠る家宝とともに、無事に脱出できるだろうか…？');
         }
 
         // 部屋を変更
@@ -1005,6 +1048,24 @@
             const se = document.getElementById(id);
             se.currentTime = 0;
             se.play();
+        }
+
+        function saveGame() {
+            localStorage.setItem('escapeGameState', JSON.stringify(gameState));
+            updateMessage('セーブしました！');
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('escapeGameState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                // UIや画面をstateに合わせて復元する
+                changeRoom(gameState.currentRoom);
+                updateInventoryDisplay();
+                updateMessage('ロードしました！');
+            } else {
+                updateMessage('セーブデータがありません');
+            }
         }
 
         // ゲーム開始
