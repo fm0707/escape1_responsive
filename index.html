@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本家屋脱出ゲーム - 家宝を探せ</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c1810, #1a0f08);
+            color: #f4f1e8;
+        }
+
+        .game-container {
+            width: 100vw;
+            max-width: 1408px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .room-view {
+            aspect-ratio: 1/1;           /* ←正方形 */
+            width: 90vw;                 /* 画面幅の90% */
+            max-width: 640px;            /* PC時最大サイズ */
+            max-height: 90vw;       
+            background-size: cover;      /* ←coverじゃなくcontain */
+            background-repeat: no-repeat;
+            background-position: center center;
+            position: relative;
+            margin: 0 auto;
+            cursor: crosshair;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        #roomImage {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;    /* 画像全体を表示 */
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 0;
+            pointer-events: none;   /* 画像上でもクリックイベントが通るように */
+        }
+
+        .clickable-area {
+            position: absolute;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            z-index: 2;
+            pointer-events: auto;
+
+        }
+
+        .clickable-area:hover {
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        }
+
+        .ui-panel {
+            flex-wrap: wrap;
+            width: 100vw;
+            max-width: 1048px;
+            min-height: 120px;
+            background: #2c1810;
+            box-sizing: border-box;
+            display: flex;
+        }
+
+        .inventory {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+            padding: 0 20px;
+            width:100%;
+        }
+
+        .inventory-slot {
+            width: 14vw; 
+            height: 14vw; 
+            max-width: 80px; 
+            max-height: 80px;
+            border: 2px solid #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .inventory-slot:hover {
+            background: rgba(212, 175, 55, 0.2);
+            transform: scale(1.05);
+        }
+
+        .inventory-slot.selected {
+            border: 3px solid #9f2b02;   /* 金色・太め推奨 */
+            box-shadow: 0 0 12px #ff8c0099;
+            background: rgba(255, 215, 0, 0.15);
+        }
+
+        .inventory-slot img {
+            max-width: 60px;
+            max-height: 60px;
+            object-fit: contain;
+        }
+
+        .info-panel {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .message-area {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            height:80px;
+            min-height: 40px;
+            border: 1px solid #d4af37;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #d4af37, #b8941f);
+            border: none;
+            border-radius: 5px;
+            color: #1a0f08;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(135deg, #b8941f, #d4af37);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2c1810, #1a0f08);
+            padding: 30px;
+            border-radius: 10px;
+            border: 3px solid #d4af37;
+            max-width: calc(100vw - 60px);
+            text-align: center;
+        }
+
+        .modal button {
+            margin: 10px;
+            padding: 10px 20px;
+            background: #d4af37;
+            border: none;
+            border-radius: 5px;
+            color: #1a0f08;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .puzzle-input {
+            width: 200px;
+            padding: 10px;
+            margin: 10px;
+            border: 2px solid #d4af37;
+            background: rgba(244, 241, 232, 0.9);
+            color: #1a0f08;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .title {
+            position: absolute;
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2px 8px;
+            border: 2px solid #d4af37;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        /* 画像プレースホルダー用のスタイル */
+        .image-placeholder {
+            background: linear-gradient(135deg, #444, #666);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 14px;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        .notice {
+            text-overflow: clip;
+        }
+
+        .save-area {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin: 18px 0 4px 0;
+            width: 40%;
+        }
+
+        @media (max-width: 600px) {
+            .save-area {
+                width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                margin-top: 8px;
+                gap: 16px;
+            }
+        }
+
+        .save-area .nav-btn {
+            min-width: 80px;
+            padding: 10px 18px;
+            font-size: 15px;
+            background: linear-gradient(135deg, #d4af37 85%, #b8941f 100%);
+            border-radius: 8px;
+            border: none;
+            color: #1a0f08;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.1);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .save-area .nav-btn:hover {
+            background: linear-gradient(135deg, #b8941f 70%, #d4af37 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 0 12px #d4af3740;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="title">家宝を探せ - 日本家屋からの脱出</div>
+        
+        <div class="room-view" id="roomView">
+            <!-- クリック可能エリアは動的に生成 -->
+              <img id="roomImage" src="">
+        </div>
+
+        <div class="ui-panel">
+            <div class="info-panel">
+                <div class="message-area" id="messageArea">
+                   気付けばあなたは、古い日本家屋の中に閉じ込められていた。<br>この屋敷に眠る家宝とともに、無事に脱出できるだろうか…？
+                </div>
+                <div class="navigation">
+                    <button class="nav-btn" onclick="changeRoom('genkan')">玄関</button>
+                    <button class="nav-btn" onclick="changeRoom('living')">居間</button>
+                    <button class="nav-btn" onclick="changeRoom('bedroom')">寝室</button>
+                    <button class="nav-btn" onclick="changeRoom('study')">書斎</button>
+                </div>
+            </div>
+            <div class="inventory" id="inventory">
+                <div class="inventory-slot" onclick="useItem(0)"></div>
+                <div class="inventory-slot" onclick="useItem(1)"></div>
+                <div class="inventory-slot" onclick="useItem(2)"></div>
+                <div class="inventory-slot" onclick="useItem(3)"></div>
+                <div class="inventory-slot" onclick="useItem(4)"></div>
+            </div>
+            <button id="bgm-toggle" onclick="toggleBGM()" style="position:absolute;top:20px;right:20px;z-index:1000;">
+            🔊 BGM
+            </button> 
+            <div class="save-area">
+                <button class="nav-btn" onclick="saveGame()">セーブ</button>
+                <button class="nav-btn" onclick="loadGame()">ロード</button>
+            </div>
+        </div>
+        <div class="notice">当サイトはOtoLogicの素材を使用しています。作者：スラセブン</div>
+    </div>
+
+    <!-- モーダルダイアログ -->
+    <div class="modal" id="modal">
+        <div class="modal-content" id="modalContent">
+            <!-- モーダルの内容は動的に生成 -->
+        </div>
+    </div>
+    <audio id="bgm" src="sounds/musou.mp3" loop></audio>
+    <audio id="se-click" src="sounds/Short_Accent18-1(Dry).mp3"></audio>
+    <audio id="se-item" src="sounds/Inspiration02-1(High).mp3"></audio>
+    <audio id="se-error" src="sounds/Quiz-Buzzer05-1(Mid).mp3"></audio>
+    <audio id="se-tv" src="sounds/TV-Hardware02-01(Button).mp3"></audio>
+    <audio id="se-clear" src="sounds/Angel01-1.mp3"></audio>
+    <script>
+        // ゲーム設定 - 画像パスをここで管理
+        let IMAGES = {
+            rooms: {
+                genkan: 'images/genkan.jpg',        // 玄関の画像
+                living: 'images/living.jpg',        // 居間の画像
+                bedroom: 'images/bedroom.jpg',      // 寝室の画像
+                study: 'images/study.jpg'           // 書斎の画像
+            },
+            items: {
+                key: 'images/key.jpg',              // 鍵の画像
+                scroll: 'images/scroll.jpg',        // 巻物の画像
+                mirror: 'images/mirror.jpg',        // 鏡の画像
+                box: 'images/box.jpg',              // 箱の画像
+                treasure: 'images/treasure.jpg',    // 家宝の画像
+                futonbo: 'images/futonbo.jpg',      // 布団たたきの画像
+                smallKey: 'images/smallKey.jpg',    // 小さい鍵の画像
+                book: 'images/book.jpg',            // 絵本の画像
+            }
+        };
+
+        // ゲーム状態
+        let gameState = {
+            currentRoom: 'genkan',
+            currentChannel: 1,
+            inventory: [],
+            flags: {
+                foundKey: false,
+                foundMirror: false,
+                readScroll: false,
+                solvedPuzzle: false,
+                foundTreasure: false,
+                foundSmallKey: false,
+                foundFutonbo: false,
+                foundBear: false,
+                happyBear: false,
+                foundBook:false,
+                watched1: false,
+                watched2: false,
+                watched3: false,
+                watched4: false
+            },
+            selectedItem: null
+        };
+
+        // 部屋データ
+        let patchX = 3
+        let rooms = {
+            genkan: {
+                name: '玄関',
+                description: '古い日本家屋の玄関。靴が整然と並んでいる。',
+                clickableAreas: [
+                    {
+                        x: 19, y: 64, width: 25, height: 12,
+                        action: 'examine_shoes',
+                        description: '古い下駄と草履が並んでいる'
+                    },
+                    {
+                        x: 70, y: 50, width: 7, height: 22,
+                        action: 'examine_umbrella',
+                        description: '番傘が立てかけられている'
+                    },
+                    {
+                        x: 80, y: 35, width: 20, height: 63,
+                        action: 'examine_bush',
+                        description: '茂みがある'
+                    },
+                    {
+                        x: 0, y: 35, width: 20, height: 63,
+                        action: 'examine_bush_left',
+                        description: '茂みがある'
+                    },
+                    {
+                        x: 36, y: 26, width: 32, height: 38,
+                        action: 'examine_door',
+                        description: '立派な木製のドア'
+                    },
+                    {
+                        x: 31, y: 36, width: 3, height: 10,
+                        action: 'examine_plate',
+                        description: '表札'
+                    }
+                ]
+            },
+            living: {
+                name: '居間',
+                description: '畳敷きの居間。囲炉裏の跡がある。',
+                clickableAreas: [
+                    {
+                        x: 30, y: 76, width: 34, height: 16,
+                        action: 'examine_fireplace',
+                        description: '古い囲炉裏'
+                    },
+                    {
+                        x: 58, y: 15, width: 11, height: 24,
+                        action: 'examine_scroll',
+                        description: '掛け軸が掛かっている'
+                    },
+                    {
+                        x: 48, y: 46, width: 12, height: 13,
+                        action: 'examine_chest',
+                        description: '古い桐の箪笥'
+                    },
+                    {
+                        x: 20, y: 36, width: 20, height: 14,
+                        action: 'examine_tv',
+                        description: '古いテレビ'
+                    },
+                    {
+                        x: 2, y: 63, width: 16, height: 10,
+                        action: 'examine_livingbooks',
+                        description: '本'
+                    },
+                    {
+                        x: 42, y: 64, width: 14, height: 10,
+                        action: 'examine_nabe',
+                        description: '鍋'
+                    },
+                    {
+                        x: 80, y: 90, width: 18, height: 10,
+                        action: 'examine_zaisu',
+                        description: '座布団'
+                    },
+                    {
+                        x: 74, y: 10, width: 26, height: 50,
+                        action: 'examine_shoji',
+                        description: '障子'
+                    }
+                    
+                ]
+            },
+            bedroom: {
+                name: '寝室',
+                description: '質素な寝室。布団が畳まれている。',
+                clickableAreas: [
+                    {
+                        x: 10, y: 65, width: 48, height: 20,
+                        action: 'examine_futon',
+                        description: '綺麗に畳まれた布団'
+                    },
+                    {
+                        x: 28, y: 37, width: 10, height: 14,
+                        action: 'examine_picture',
+                        description: '絵画'
+                    },
+                    {
+                        x: 62, y: 35, width: 11, height: 19,
+                        action: 'examine_mirror',
+                        description: '古い銅鏡が置かれている'
+                    },
+                    {
+                        x: 80, y: 70, width: 3, height: 3,
+                        action: 'examine_insect',
+                        description: '?'
+                    }
+                ]
+            },
+            study: {
+                name: '書斎',
+                description: '本がぎっしりと並んだ書斎。',
+                clickableAreas: [
+                    {
+                        x: 14, y: 22, width: 18, height: 32,
+                        action: 'examine_books',
+                        description: '古い書物が並んでいる'
+                    },
+                    {
+                        x: 31, y: 22, width: 18, height: 32,
+                        action: 'examine_books2',
+                        description: '古い書物が並んでいる'
+                    },
+                    {
+                        x: 52, y: 22, width: 20, height: 32,
+                        action: 'examine_books3',
+                        description: '古い書物が並んでいる'
+                    },
+                    {
+                        x: 15, y: 68, width: 9, height: 10,
+                        action: 'examine_piledbooks',
+                        description: '本が積み重ねられている'
+                    },
+                    {
+                        x: 77, y: 48, width: 20, height: 20,
+                        action: 'examine_safe',
+                        description: '金庫がある'
+                    },
+                    {
+                        x: 80, y: 26, width: 8, height: 14,
+                        action: 'examine_wallposter',
+                        description: '壁に書類が貼られている'
+                    }
+                ]
+            }
+        };
+        const initialLivingAreas = JSON.parse(JSON.stringify(rooms.living.clickableAreas));
+
+        // ゲーム初期化
+        function initGame() {
+            changeRoom('genkan');
+            updateMessage('気付けばあなたは、古い日本家屋の中に閉じ込められていた。この屋敷に眠る家宝とともに、無事に脱出できるだろうか…？');
+        }
+
+        // 部屋を変更
+        function changeRoom(roomId) {
+            gameState.currentRoom = roomId;
+            const room = rooms[roomId];
+            
+            // 背景画像を設定（画像がない場合はプレースホルダー）
+            const roomView = document.getElementById('roomView');
+            roomView.style.backgroundImage = `url(${IMAGES.rooms[roomId]})`;
+            
+            // クリック可能エリアを生成
+            generateClickableAreas(room);
+            
+            updateMessage(`${room.name}に入りました。${room.description}`);
+        }
+
+        // 背景画像を差し替え
+        function changeRoomImage(roomId) {
+            gameState.currentRoom = roomId;
+            const room = rooms[roomId];
+            
+            // 背景画像を設定（画像がない場合はプレースホルダー）
+            const roomView = document.getElementById('roomView');
+            roomView.style.backgroundImage = `url(${IMAGES.rooms[roomId]})`;
+            generateClickableAreas(room);
+        }
+
+        // クリック可能エリアを生成
+        // 
+        function generateClickableAreas(room) {
+            const roomView = document.getElementById('roomView');
+
+            roomView.innerHTML = '<img id="roomImage" src="'+IMAGES.rooms[gameState.currentRoom]+'" style="width:100%;height:100%;object-fit:contain;position:absolute;left:0;top:0;">';
+
+            // 画像のロード後に配置
+            const img = roomView.querySelector('#roomImage');
+            img.onload = function() {
+
+                room.clickableAreas.forEach(area => {
+                    const clickableDiv = document.createElement('div');
+                    clickableDiv.className = 'clickable-area';
+                    clickableDiv.style.left   = (area.x) + '%';
+                    clickableDiv.style.top    = (area.y) + '%';
+                    clickableDiv.style.width  = (area.width) + '%';
+                    clickableDiv.style.height = (area.height) + '%';
+                    clickableDiv.style.position = 'absolute';
+                    clickableDiv.onclick = () => handleAreaClick(area.action);
+                    clickableDiv.title = area.description;
+
+                    roomView.appendChild(clickableDiv);
+                });
+            };
+            img.src = IMAGES.rooms[gameState.currentRoom]; // 必ず画像セット
+        }
+
+        // エリアクリック処理
+        function handleAreaClick(action) {
+            switch(action) {
+                case 'examine_shoes':
+                    if (!gameState.flags.foundKey) {
+                                updateMessage('古い下駄の中に小さな鍵が隠されていました！');
+                                addItem('key');
+                        gameState.flags.foundKey=true;
+                    } else {
+                                updateMessage('古い下駄が並んでいる');
+                        }
+                                break;
+                    
+                case 'examine_umbrella':
+                    updateMessage('番傘の柄に何か文字が刻まれている...「東の間の鏡に映る真実」');
+                    break;
+                case 'examine_door':
+                    updateMessage('古びているが立派な木製のドアだ');
+                    break;
+                case 'examine_plate':
+                    updateMessage('表札に屋敷の主の名前が書かれている');
+                    break;
+                case 'examine_bush_left':
+                    updateMessage('緑鮮やかな茂みがある。さわやかな香りがする');
+                    break;
+                case 'examine_bush':
+                    if (gameState.flags.watched3) {
+                        showModal(
+                            '茂みの奥に、雪だるまの像が隠されていた。',
+                            '<img src="images/snowman.jpg" style="width:300px;display:block;margin:0 auto 20px;">',
+                            [{text: '閉じる', action: 'close'}]
+                        );
+                        gameState.flags.foundSnowman = true;
+                    } else {
+                        updateMessage('緑鮮やかな茂みがある');
+                    }
+                    
+                    break;   
+                case 'examine_fireplace':
+                    if (gameState.selectedItem=='futonbo') {
+                        updateMessage('なんと灰の中からクマの妖精があらわれた！');
+                        IMAGES.rooms.living = 'images/living2.jpg';
+                        gameState.flags.foundBear = true;
+  
+                        rooms.living.clickableAreas.push({
+                            x: 64, y: 60, width: 12, height: 15,
+                            action: 'talkto_bear',
+                            description: 'クマと話す'
+                        });
+                        changeRoomImage(gameState.currentRoom);
+                    } else if(gameState.flags.foundBear){
+                        updateMessage('囲炉裏に灰がたまっている');
+                    } else {
+                        updateMessage('囲炉裏の灰の中に何かが埋まっているようだ...');
+                    }
+                    break;
+                case 'examine_scroll':
+                    if (!gameState.flags.readScroll) {
+                        showModal('古い巻物', '「四つの季節が一つになる時、真の宝は現れん」', [
+                            {text: '閉じる', action: 'close'}
+                        ]);
+                        gameState.flags.readScroll = true;
+                        addItem('scroll');
+                    } else {
+                        updateMessage('すでに読んだ巻物です。');
+                        showModal('古い巻物', '「四つの季節が一つになる時、真の宝は現れん」', [
+                            {text: '閉じる', action: 'close'}
+                        ]);
+                    }
+                    break;
+                case 'examine_picture':
+                    if (gameState.flags.foundBear) {
+                        showModal(
+                            '古い絵葉書が額の裏に貼ってある',
+                            '<img src="images/momiji.png" style="width:200px;display:block;margin:0 auto 20px;">',
+                            [{text: '閉じる', action: 'close'}]
+                        );
+                    } else {
+                        updateMessage('植物の絵画だ。');
+                    }
+                    break;
+                     
+                case 'examine_chest':
+                    if (gameState.selectedItem=='key' && !gameState.flags.foundMirror) {
+                        updateMessage('鍵を使って箪笥を開けました。中から古い手鏡が出てきました！');
+                        addItem('mirror');
+                        removeItem('key');
+                        gameState.flags.foundMirror = true;
+                        gameState.flags.isUsedKey = true;
+                    } else if (!gameState.flags.isUsedKey){
+                        updateMessage('箪笥には鍵がかかっている。鍵が必要だ。');
+                    } else {
+                        updateMessage('箪笥にはがらくたが入っている。');
+                    }
+                    break;
+                case 'examine_tv':
+                    showTVModal();
+                    break;  
+                case 'examine_livingbooks':
+                    if (gameState.flags.watched2 && gameState.flags.foundSnowman && !gameState.flags.foundBook) {
+                        updateMessage('コグマの大冒険の絵本を見つけた');
+                        addItem('book');
+                        gameState.flags.foundBook = true;
+                    } else {
+                        updateMessage('本が何冊かある');
+                    }
+                    break;  
+                case 'examine_nabe':
+                    updateMessage('鍋は空っぽだ');
+                    break;  
+                case 'examine_zaisu':
+                    updateMessage('色褪せた座布団だ');
+                    break;  
+                case 'examine_shoji':
+                    updateMessage('障子は古びているが穴は開いていない');
+                    break;  
+                case 'examine_futon':
+                    if (!gameState.flags.foundFutonbo) {
+                        addItem('futonbo');
+                        updateMessage('布団たたきの棒をみつけた。');
+                        gameState.flags.foundFutonbo = true;
+                    } else {
+                        updateMessage('布団の下に何も隠されていないようだ。');
+                    }
+                    break;
+                    
+                case 'examine_mirror':
+                    if (gameState.selectedItem=='mirror') {
+                        updateMessage('手鏡を使って銅鏡を調べると...隠された文字が現れた！「金庫の操作パネルは文字入力可能」');
+                        gameState.flags.solvedPuzzle = true;
+                    } else if(!gameState.flags.solvedPuzzle) {
+                        updateMessage('古い銅鏡だが、何か秘密がありそうだ...');
+                    } else {
+                        updateMessage('古い銅鏡に、「金庫の操作パネルは文字入力可能」という文字が浮かんでいる');
+                    }
+                    break;
+                case 'examine_insect':
+                    updateMessage('ゴキブリの死骸が落ちている。');
+                    break;    
+                case 'examine_books':
+                    if (gameState.currentChannel==1 && gameState.flags.watched1) {
+                        updateMessage('佐賀のバルーンフェスタについてのパンフレットだ。夏に開催されるようだ。');
+                    } else {
+                        updateMessage('古い書物がたくさん並んでいる。何か手がかりがあるかもしれない。');
+                    }
+                    
+                    break;
+                case 'examine_piledbooks':
+                    updateMessage('桜の花びらのしおりがはさまっている。花びらが3枚配置されている。');
+                    break;
+                    
+                case 'examine_wallposter':
+                    updateMessage('日々健康に過ごすための心得が貼ってある');
+                    break;  
+                case 'examine_books2':
+                    updateMessage('植物に関する本が多いようだ');
+                    break;  
+                case 'examine_books3':
+                    updateMessage('クマの冬眠に関する本がある');
+                    break;  
+                case 'examine_safe':
+                    if (gameState.flags.solvedPuzzle) {
+                        showSeasonPuzzle();
+                    } else {
+                        updateMessage('金庫には複雑な仕掛けがある。まだ開ける方法がわからない。');
+                    }
+                    break;
+                case 'talkto_bear':
+                    if (gameState.selectedItem === 'futonbo') {
+                        // バッドエンド演出
+                        showModal(
+                            'バッドエンド',
+                            '<img src="images/badend.jpg" style="width:300px;display:block;margin:0 auto 20px;">' +
+                            '<br>あなたはクマの妖精を布団たたきで叩いてしまった…<br><b>家宝は永遠に失われた。</b><br><span style="color:#f00;">【バッドエンド】</span>',
+                            [{text: '最初から', action: 'restart'}]
+                        );
+                        playSE('se-error');
+                        break;
+                    }
+                    if (!gameState.flags.happyBear) {
+                        updateMessage('本当の家宝って何か知ってる？');
+                    } else {
+                        updateMessage('ぼくは3回冬眠したことがあるんだ！');
+                    }
+                
+                    if (gameState.selectedItem=='book' && gameState.currentChannel==2) {
+                        updateMessage('妖精は喜んでいる！');
+                        IMAGES.rooms.living = 'images/living3.jpg';
+                        gameState.flags.happyBear = true;
+                        removeItem('book');
+                        changeRoomImage(gameState.currentRoom);
+                        
+                    } 
+                    break;
+            }
+            gameState.selectedItem = null;
+            gameState.selectedItemSlot = null;
+            playSE('se-click');
+            updateInventoryDisplay();
+        }
+
+        // TV
+        // グローバル変数で管理
+
+        function changeChannel(dir) {
+            playSE('se-tv'); // ここで絶対鳴る！
+            gameState.currentChannel += dir;
+            if(gameState.currentChannel < 1) gameState.currentChannel = 4;
+            if(gameState.currentChannel > 4) gameState.currentChannel = 1;
+            if (gameState.currentChannel === 1) gameState.flags.watched1 = true;
+            if (gameState.currentChannel === 2) gameState.flags.watched2 = true;
+            if (gameState.currentChannel === 3) gameState.flags.watched3 = true;
+            if (gameState.currentChannel === 4) gameState.flags.watched4 = true;
+            renderTV(); // 表示更新
+        }
+
+        function renderTV() {
+            let tvHint = [
+                '1ch：ニュース 「佐賀バルーンフェスタ開催」',
+                '2ch：アニメ 「コグマの大冒険」',
+                '3ch：ミステリー 「茂みの中に潜むのは…」',
+                '4ch：天気予報 「明日は雪だるま注意」'
+            ];
+            let tvImg = [
+                'ch1.jpg',
+                'ch2.jpg',
+                'ch3.jpg',
+                'ch4.jpg',
+            ];
+            document.getElementById('modalContent').innerHTML =
+                `<h3>テレビ</h3>
+                <img src="images/${tvImg[gameState.currentChannel-1]}" style="width:300px;display:block;margin:0 auto 20px;">
+                <div style="margin-bottom:20px;">${tvHint[gameState.currentChannel-1]}</div>
+                <button onclick="changeChannel(-1)">◀</button>
+                <span style="margin:0 10px;">${gameState.currentChannel}ch</span>
+                <button onclick="changeChannel(1)">▶</button>
+                <br><button onclick="closeModal()">閉じる</button>`;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function showTVModal() {
+            renderTV();
+        }
+
+
+        // 季節パズルを表示
+        function showSeasonPuzzle() {
+            const modalContent = `
+                <h3>入力パネル</h3>
+                <p>正しい答えを入力してください</p>
+                <input type="text" class="puzzle-input" id="seasonInput" placeholder="四季合計の数字を入力">
+                <br>
+                <button onclick="checkSeasonPuzzle()">確認</button>
+                <button onclick="closeModal()">閉じる</button>
+            `;
+            
+            document.getElementById('modalContent').innerHTML = modalContent;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        // 季節パズルの答えをチェック
+        function checkSeasonPuzzle() {
+            const input = document.getElementById('seasonInput').value;
+            if (input === '１９' || input === '19') {
+                closeModal();
+                updateMessage('正解です！金庫が開きました！中から美しい家宝が現れました！');
+                playSE('se-clear');
+                showModal(
+                    'ノーマル家宝発見！',
+                    '<img src="images/treasure.jpg" style="width:300px;display:block;margin:0 auto 20px;"><br>見事にノーマル家宝を発見しました！<br>古い日本家屋の秘密を解き明かしましたね。',
+                    [{text: '最初から', action: 'restart'}]
+                );
+                addItem('treasure');
+                gameState.flags.foundTreasure = true;
+
+            } else if (input === '２２' || input === '22') {
+                closeModal();
+                updateMessage('正解です！金庫が開きました！中から美しい家宝が現れました！');
+                playSE('se-clear');
+                showModal(
+                    '真の家宝発見！',
+                    '<img src="images/treasure2.jpg" style="width:300px;display:block;margin:0 auto 20px;"><br>見事に真の家宝を発見しました！<br>古い日本家屋の秘密を解き明かしましたね。',
+                    [{text: '最初から', action: 'restart'}]
+                );
+                addItem('treasure');
+                gameState.flags.foundTreasure = true;
+                
+            } else {
+                playSE('se-error');
+                updateMessage('違います。もう一度考えてみてください。');
+            }
+        }
+
+        // アイテム管理
+        function addItem(itemId) {
+            playSE('se-item');
+            if (gameState.inventory.length < 5) {
+                gameState.inventory.push(itemId);
+                updateInventoryDisplay();
+            }
+        }
+
+        function removeItem(itemId) {
+            const index = gameState.inventory.indexOf(itemId);
+            if (index !== -1) {
+                gameState.inventory.splice(index, 1);
+                gameState.selectedItem = null;
+                gameState.selectedItemSlot = null;
+                updateInventoryDisplay();
+            }
+            
+        }
+
+        function hasItem(itemId) {
+            return gameState.inventory.includes(itemId);
+        }
+
+        function useItem(slotIndex) {
+            if (gameState.inventory[slotIndex]) {
+                const item = gameState.inventory[slotIndex];
+                updateMessage(`${getItemName(item)}を選択しました。使用したい場所をクリックしてください。`);
+                gameState.selectedItem = item;
+                gameState.selectedItemSlot = slotIndex;
+                updateInventoryDisplay(); 
+            }
+        }
+
+        function getItemName(itemId) {
+            const names = {
+                key: '鍵',
+                scroll: '巻物',
+                mirror: '手鏡',
+                box: '箱',
+                treasure: '家宝',
+                smallKey: '小さい鍵',
+                futonbo: '布団たたきの棒',
+                book: 'コグマの大冒険の絵本',
+            };
+            return names[itemId] || itemId;
+        }
+
+        // インベントリ表示更新
+        function updateInventoryDisplay() {
+            const slots = document.querySelectorAll('.inventory-slot');
+            slots.forEach((slot, index) => {
+                slot.innerHTML = '';
+                if (gameState.inventory[index]) {
+                    const img = document.createElement('img');
+                    img.src = IMAGES.items[gameState.inventory[index]];
+                    img.onerror = function() {
+                        // 画像が読み込めない場合はプレースホルダーを表示
+                        this.style.display = 'none';
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'image-placeholder';
+                        placeholder.textContent = getItemName(gameState.inventory[index]);
+                        placeholder.style.width = '60px';
+                        placeholder.style.height = '60px';
+                        slot.appendChild(placeholder);
+                    };
+                    slot.appendChild(img);
+                }
+                // ★選択中ならselectedクラス追加
+                if (gameState.selectedItemSlot === index) {
+                    slot.classList.add('selected');
+                } else {
+                    slot.classList.remove('selected');
+                }
+            });
+        }
+
+        // メッセージ更新
+        function updateMessage(message) {
+            document.getElementById('messageArea').innerHTML = message;
+        }
+
+        // モーダル表示
+        function showModal(title, content, buttons) {
+            let modalHtml = `<h3>${title}</h3><p>${content}</p>`;
+            buttons.forEach(button => {
+                modalHtml += `<button onclick="${button.action === 'close' ? 'closeModal' : button.action === 'restart' ? 'restartGame()' : button.action}()">${button.text}</button>`;
+            });
+            
+            document.getElementById('modalContent').innerHTML = modalHtml;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // ゲームリスタート
+        function restartGame() {
+            IMAGES.rooms.living = 'images/living.jpg';
+            rooms.living.clickableAreas = JSON.parse(JSON.stringify(initialLivingAreas));
+            gameState = {
+                currentRoom: 'genkan',
+                currentChannel: 1,
+                inventory: [],
+                flags: {
+                    foundKey: false,
+                    foundMirror: false,
+                    readScroll: false,
+                    solvedPuzzle: false,
+                    foundTreasure: false,
+                    foundSmallKey: false,
+                    foundFutonbo: false,
+                    foundBear: false,
+                    happyBear: false,
+                    foundBook:false,
+                    watched1: false,
+                    watched2: false,
+                    watched3: false,
+                    watched4: false
+                },
+                selectedItem: null,
+                selectedItemSlot: null,
+            };
+            closeModal();
+            initGame();
+            updateInventoryDisplay();
+        }
+
+        let isBGMPlaying = false;   // ←デフォルトは再生してない
+        let isBGMInitialized = false; // 初回クリック判定用
+
+        // 初回クリック時にだけBGMを再生
+        function initBGMOnce() {
+        if (!isBGMInitialized) {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.3;
+            bgm.play();
+            isBGMPlaying = true;
+            isBGMInitialized = true;
+            document.getElementById('bgm-toggle').textContent = "🔊 BGM";
+        }
+        }
+        window.addEventListener('click', initBGMOnce, { once: true });
+
+        function toggleBGM() {
+        const bgm = document.getElementById('bgm');
+        const btn = document.getElementById('bgm-toggle');
+        if (!isBGMPlaying) {
+            bgm.play();
+            isBGMPlaying = true;
+            btn.textContent = "🔊 BGM";
+        } else {
+            bgm.pause();
+            isBGMPlaying = false;
+            btn.textContent = "🔇 BGM";
+        }
+        }
+
+        function playSE(id) {
+            const se = document.getElementById(id);
+            se.currentTime = 0;
+            se.play();
+        }
+
+        function saveGame() {
+            localStorage.setItem('escapeGameState', JSON.stringify(gameState));
+            const oldMsg = document.getElementById('messageArea').innerHTML;
+            updateMessage('セーブしました！');
+            setTimeout(() => {
+                updateMessage(oldMsg);
+            }, 1500);
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('escapeGameState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                // UIや画面をstateに合わせて復元する
+                changeRoom(gameState.currentRoom);
+                updateInventoryDisplay();
+                updateMessage('ロードしました！');
+            } else {
+                updateMessage('セーブデータがありません');
+            }
+        }
+
+        // ゲーム開始
+        initGame();
+    </script>
+</body>
+</html>
