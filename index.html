@@ -320,7 +320,7 @@
                 <button class="nav-btn" onclick="loadGame()">ロード</button>
             </div>
         </div>
-        <div class="notice">当サイトはOtoLogicの素材を使用しています。作者：スラセブン</div>
+        <div class="notice">当サイトはOtoLogicの素材を使用しています。作者：<a href="https://fm0707.github.io/escape2-responsive/">スラセブン</a></div>
     </div>
 
     <!-- モーダルダイアログ -->
@@ -1050,6 +1050,21 @@
             se.play();
         }
 
+<<<<<<< HEAD
+=======
+        // どこかで最初に一度だけ呼ぶ
+        function preloadImages() {
+            Object.values(IMAGES.rooms).forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+            Object.values(IMAGES.items).forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+        }
+
+>>>>>>> master
         function saveGame() {
             localStorage.setItem('escapeGameState', JSON.stringify(gameState));
             const oldMsg = document.getElementById('messageArea').innerHTML;
@@ -1073,6 +1088,10 @@
         }
 
         // ゲーム開始
+<<<<<<< HEAD
+=======
+        preloadImages();
+>>>>>>> master
         initGame();
     </script>
 </body>
